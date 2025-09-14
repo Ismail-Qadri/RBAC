@@ -79,7 +79,8 @@ const translations = {
     addResource: 'Add Resource',
     addResourceModal: 'Add Resource',
     editResourceModal: 'Edit Resource',
-    description: 'Description'
+    description: 'Description',
+    assignedRoles: 'Assigned Roles',
   },
   ar: {
     permissionManagement: 'إدارة الصلاحيات',
@@ -161,7 +162,8 @@ const translations = {
     addResource: 'إضافة مورد',
     addResourceModal: 'إضافة مورد',
     editResourceModal: 'تعديل مورد',
-description: 'الوصف'
+description: 'الوصف',
+assignedRoles: 'الأدوار المخصصة',
   }
 };
 

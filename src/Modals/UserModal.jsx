@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { X, CheckCircle2 } from 'lucide-react';
 import useLanguage from '../hooks/useLanguage';
@@ -7,61 +6,164 @@ import axios from "axios";
 const UserModal = ({ groups, roles, resources, onClose, onSave, user }) => {
   const { language, t } = useLanguage();
   const [nafathId, setNafathId] = useState("");
-  const [formData, setFormData] = useState({
-    id: '',
-    nafath_id: '',
-    email: '',
-    full_name_en: '',
-    status: '',
-    roles: [],
-    groups: [],
-    groupIds: [],
-    phone: '',
-    // ...other fields as needed
+  const [fetchError, setFetchError] = useState("");
+  const [formData, setFormData] = useState(() => {
+    // If editing, preselect user's groups
+    if (user && Array.isArray(user.groups)) {
+      return {
+        nafath_id: user.nafath_id || '',
+        id_version: user.id_version || '',
+        email: user.email || '',
+        phone_number: user.phone_number || '',
+        first_name_ar: user.first_name_ar || '',
+        father_name_ar: user.father_name_ar || '',
+        grand_name_ar: user.grand_name_ar || '',
+        family_name_ar: user.family_name_ar || '',
+        first_name_en: user.first_name_en || '',
+        father_name_en: user.father_name_en || '',
+        grand_name_en: user.grand_name_en || '',
+        family_name_en: user.family_name_en || '',
+        two_name_ar: user.two_name_ar || '',
+        two_name_en: user.two_name_en || '',
+        full_name_ar: user.full_name_ar || '',
+        full_name_en: user.full_name_en || '',
+        gender: user.gender || '',
+        id_issue_date_g: user.id_issue_date_g || '',
+        id_issue_date_h: user.id_issue_date_h || '',
+        id_expiry_date_g: user.id_expiry_date_g || '',
+        id_expiry_date_h: user.id_expiry_date_h || '',
+        language: user.language || '',
+        nationality: user.nationality || '',
+        nationality_ar: user.nationality_ar || '',
+        nationality_en: user.nationality_en || '',
+        dob_g: user.dob_g || '',
+        dob_h: user.dob_h || '',
+        card_issue_place_ar: user.card_issue_place_ar || '',
+        card_issue_place_en: user.card_issue_place_en || '',
+        title_desc_ar: user.title_desc_ar || '',
+        title_desc_en: user.title_desc_en || '',
+        full_name: user.full_name || '',
+        status: user.status || '',
+        roles: user.roles || [],
+        groupIds: user.groups.map(g => g.id),
+        phone: user.phone || user.phone_number || '',
+      };
+    }
+    // Default for new user
+    return {
+      nafath_id: '',
+      id_version: '',
+      email: '',
+      phone_number: '',
+      first_name_ar: '',
+      father_name_ar: '',
+      grand_name_ar: '',
+      family_name_ar: '',
+      first_name_en: '',
+      father_name_en: '',
+      grand_name_en: '',
+      family_name_en: '',
+      two_name_ar: '',
+      two_name_en: '',
+      full_name_ar: '',
+      full_name_en: '',
+      gender: '',
+      id_issue_date_g: '',
+      id_issue_date_h: '',
+      id_expiry_date_g: '',
+      id_expiry_date_h: '',
+      language: '',
+      nationality: '',
+      nationality_ar: '',
+      nationality_en: '',
+      dob_g: '',
+      dob_h: '',
+      card_issue_place_ar: '',
+      card_issue_place_en: '',
+      title_desc_ar: '',
+      title_desc_en: '',
+      full_name: '',
+      status: '',
+      roles: [],
+      groupIds: [],
+      phone: '',
+    };
   });
   const isNewUser = !user;
   const API_BASE_URL = 'https://dev-api.wedo.solutions:3000/api';
 
   // If editing, fetch user data from API
   useEffect(() => {
-    if (!isNewUser && user?.id) {
-      fetch(`${API_BASE_URL}/users/${nafathId}}`)
-        .then(res => res.json())
-        .then(data => {
-          setFormData({
-            ...data,
-            groupIds: Array.isArray(data.groupIds) ? data.groupIds : [],
-          });
+    if (!isNewUser && user?.nafath_id) {
+      axios.get(`${API_BASE_URL}/users`)
+        .then(res => {
+          const users = Array.isArray(res.data) ? res.data : [];
+          const data = users.find(u => u.nafath_id === user.nafath_id);
+          if (data) {
+            setFormData({
+              ...formData,
+              ...data,
+              nafath_id: data.nafath_id || '',
+              groups: Array.isArray(data.groups) ? data.groups : [],
+              phone: data.phone_number || '',
+              arNationality: data.nationality_ar || '',
+              enNationality: data.nationality_en || '',
+              idVersion: data.id_version || '',
+              dobG: data.dob_g || '',
+              dobH: data.dob_h || '',
+              idIssueDateG: data.id_issue_date_g || '',
+              idIssueDateH: data.id_issue_date_h || '',
+              idExpiryDateG: data.id_expiry_date_g || '',
+              idExpiryDateH: data.id_expiry_date_h || '',
+            });
+          }
         })
         .catch(() => {
           // Optionally handle error (show message, etc.)
         });
     } else if (user) {
       setFormData({
+        ...formData,
         ...user,
-        groupIds: Array.isArray(user.groupIds) ? user.groupIds : [],
+        nafath_id: user.nafath_id || '',
+        groups: Array.isArray(user.groups) ? user.groups : [],
+        phone: user.phone_number || '',
+        arNationality: user.nationality_ar || '',
+        enNationality: user.nationality_en || '',
+        idVersion: user.id_version || '',
+        dobG: user.dob_g || '',
+        dobH: user.dob_h || '',
+        idIssueDateG: user.id_issue_date_g || '',
+        idIssueDateH: user.id_issue_date_h || '',
+        idExpiryDateG: user.id_expiry_date_g || '',
+        idExpiryDateH: user.id_expiry_date_h || '',
       });
     }
   }, [user, isNewUser]);
   
-  const getresourcesForGroups = (groupIds) => {
+  const getResourcesForGroups = (groupIds) => {
     if (!Array.isArray(groupIds)) return [];
-    const allresourceIds = groupIds.flatMap(id => {
+    const allResourceIds = groupIds.flatMap(id => {
       const group = groups.find(g => g.id === id);
-      const role = roles.find(r => r.id === group?.roleId);
-      return role?.resourceIds || [];
+      if (group && Array.isArray(group.roles)) {
+        return group.roles.flatMap(role => role.resourceIds || []);
+      }
+      return [];
     });
-    return Array.from(new Set(allresourceIds));
+    return Array.from(new Set(allResourceIds));
   };
   
   const getRoleNamesForGroups = (groupIds) => {
     if (!Array.isArray(groupIds)) return '';
-    const uniqueRoleNames = new Set(
-      groupIds.map(id => {
-        const group = groups.find(g => g.id === id);
-        return roles.find(r => r.id === group?.roleId)?.name || 'N/A';
-      })
-    );
+    const uniqueRoleNames = new Set();
+    groupIds.forEach(id => {
+      const group = groups.find(g => g.id === id);
+      if (group && Array.isArray(group.roles)) {
+        group.roles.forEach(role => {
+          uniqueRoleNames.add(role.name);
+        });
+      }
+    });
     return Array.from(uniqueRoleNames).join(', ');
   };
 
@@ -69,76 +171,138 @@ const UserModal = ({ groups, roles, resources, onClose, onSave, user }) => {
     return resources.find(p => p.id === resourceId)?.name || resourceId;
   };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+  const handleChange = async (e) => {
+    const { name, value, type, checked } = e.target;
+    if (name === 'roles') {
+      // Multi-select for roles
+      const roleId = parseInt(value, 10);
+      setFormData(prev => {
+        let newRoles;
+        if (checked) {
+          newRoles = [...(prev.roles || []), roleId];
+        } else {
+          newRoles = (prev.roles || []).filter(id => id !== roleId);
+        }
+        return { ...prev, roles: newRoles };
+      });
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
+
+    // If user is entering nafath_id, fetch all users and filter in frontend
+    if (name === 'nafath_id' && value.length >= 10) {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/users`);
+        const users = Array.isArray(res.data) ? res.data : [];
+        const userData = users.find(u => u.nafath_id === value);
+        if (userData) {
+          setFetchError("");
+          setFormData(prev => ({
+            ...prev,
+            ...userData,
+            nafath_id: userData.nafath_id || value,
+            groups: Array.isArray(userData.groups) ? userData.groups : [],
+            phone: userData.phone_number || '',
+          }));
+        } else {
+          // Do nothing if not found
+        }
+      } catch (err) {
+        setFetchError("Could not fetch users. Please try again later.");
+        console.error('Error fetching users:', err);
+      }
+    } else if (name === 'nafath_id') {
+      setFetchError("");
+    }
   };
 
   const handleGroupChange = (e) => {
     const { value, checked } = e.target;
+    const groupId = parseInt(value, 10);
     setFormData(prevData => {
-      const newGroupIds = checked
-        ? [...prevData.groupIds, parseInt(value, 10)]
-        : prevData.groupIds.filter(id => id !== parseInt(value, 10));
+      let newGroupIds;
+      if (checked) {
+        newGroupIds = [...(prevData.groupIds || []), groupId];
+      } else {
+        newGroupIds = (prevData.groupIds || []).filter(id => id !== groupId);
+      }
       return { ...prevData, groupIds: newGroupIds };
     });
   };
 
-  // const handleSubmit = (e) => {
-  //   e.preventDefault();
-  //   if (isNewUser) {
-  //     fetch(`${API_BASE_URL}/users`, {
-  //       method: 'POST',
-  //       headers: { 'Content-Type': 'application/json' },
-  //       body: JSON.stringify(formData)
-  //     })
-  //       .then(async res => {
-  //         if (!res.ok) {
-  //           const errorText = await res.text();
-  //           throw new Error(errorText || 'Failed to create user');
-  //         }
-  //         return res.json();
-  //       })
-  //       .then(newUser => {
-  //         onSave(newUser);
-  //       })
-  //       .catch(err => {
-  //         alert('Error creating user: ' + err.message);
-  //       });
-  //   } else {
-  //     // For edit, just call onSave with updated formData (API PUT not specified)
-  //     onSave(formData);
-  //   }
-  // };
-  
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  if (isNewUser) {
-    // Fetch user details by Nafath ID
-    try {
-      const res = await fetch(`${API_BASE_URL}/users/${formData.nafath_id}`);
-      if (!res.ok) throw new Error('User not found');
-      const userData = await res.json();
-      // Populate the form with fetched user data
-      setFormData({
-        ...formData,
-        ...userData,
-        groupIds: userData.groupIds || [],
-      });
-      console.log("Fetched user data:", userData);
-      // Optionally, you can set a state to switch to edit mode if needed
-      // setIsEditMode(true);
-    } catch (err) {
-      alert('User not found or error: ' + err.message);
+    e.preventDefault();
+    // Validation: nafath_id must be exactly 10 digits for new user
+    if (isNewUser) {
+      const nafathId = formData.nafath_id;
+      if (!nafathId || nafathId.length !== 10 || !/^[0-9]{10}$/.test(nafathId)) {
+        alert('National ID (nafath_id) must be exactly 10 digits.');
+        return;
+      }
     }
-  } else {
-    // ...existing save logic for edit...
-    onSave(formData);
-  }
-};
+    let payload;
+    if (isNewUser) {
+      // Only nafath_id required for new user
+      payload = { nafath_id: formData.nafath_id };
+    } else {
+      // For edit, send all fields
+      const requiredFields = [
+        'nafath_id', 'email', 'phone_number', 'first_name_ar', 'father_name_ar', 'grand_name_ar', 'family_name_ar',
+        'first_name_en', 'father_name_en', 'grand_name_en', 'family_name_en', 'gender', 'language', 'nationality',
+        'dob_g', 'dob_h', 'id_version', 'id_issue_date_g', 'id_issue_date_h', 'id_expiry_date_g', 'id_expiry_date_h',
+        'status'
+      ];
+      payload = {};
+      requiredFields.forEach(field => {
+        payload[field] = formData[field] !== undefined ? formData[field] : '';
+      });
+    }
 
-  const currentRoleNames = getRoleNamesForGroups(formData.groupIds);
-  const currentresources = getresourcesForGroups(formData.groupIds);
+    try {
+      // Create or update user
+      let userRes;
+      if (isNewUser) {
+        userRes = await axios.post(`${API_BASE_URL}/users`, payload);
+      } else {
+        userRes = await axios.put(`${API_BASE_URL}/users/${formData.id}`, payload);
+      }
+      const userId = userRes.data?.id || formData.id;
+
+      // Remove user from all groups first (for update)
+      if (!isNewUser && userId && Array.isArray(groups)) {
+        for (const group of groups) {
+          try {
+            await axios.delete(`${API_BASE_URL}/associations/groups/${group.id}/users/${userId}`);
+          } catch (err) {
+            // Ignore errors for groups user isn't in
+          }
+        }
+      }
+
+      // Associate user with selected groups
+      if (userId && Array.isArray(formData.groupIds)) {
+        for (const groupId of formData.groupIds) {
+          try {
+            await axios.post(`${API_BASE_URL}/associations/groups/${groupId}/users`, { userId });
+          } catch (assocErr) {
+            console.error(`Error associating user with group ${groupId}:`, assocErr);
+          }
+        }
+      }
+
+      // Call parent's onSave handler to refresh data in UserManagement table
+      if (typeof onSave === 'function') {
+        onSave(userRes.data); // This should trigger a fetch in UserManagement table
+      }
+    } catch (err) {
+      alert('Error saving user: ' + (err.response?.data?.message || err.message));
+      console.error('Error saving user:', err);
+    }
+  };
+  
+  // Use groupIds for role/resource mapping
+  const currentRoleNames = getRoleNamesForGroups(formData.groupIds || []);
+  const currentResources = getResourcesForGroups(formData.groupIds || []);
   
   const resourcesByCategory = resources.reduce((acc, p) => {
     (acc[p.category] = acc[p.category] || []).push(p);
@@ -154,25 +318,25 @@ const UserModal = ({ groups, roles, resources, onClose, onSave, user }) => {
             <X size={24} />
           </button>
         </div>
-  <form onSubmit={handleSubmit} dir={language === 'ar' ? 'rtl' : 'ltr'} className="overflow-y-auto flex-1">
+        {fetchError && (
+          <div className="mb-4 text-red-600 font-semibold text-center">
+            {fetchError}
+          </div>
+        )}
+        <form onSubmit={handleSubmit} dir={language === 'ar' ? 'rtl' : 'ltr'} className="overflow-y-auto flex-1">
           <div className="mb-6">
             <h4 className="text-xl font-bold text-gray-700 mb-4 border-b pb-2">{t('userIdentifier')}</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-gray-700 font-semibold mb-2" htmlFor="id">{t('nationalId')}</label>
+                <label className="block text-gray-700 font-semibold mb-2" htmlFor="nafath_id">{t('nationalId')}</label>
                 <input
                   type="text"
-                  id="id"
-                  name="id"
-                  value={formData.id}
+                  id="nafath_id"
+                  name="nafath_id"
+                  value={formData.nafath_id}
                   onChange={handleChange}
-                  placeholder={t('idPlaceholder')}
+                  placeholder={formData.nafath_id || t('idPlaceholder')}
                   className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${!isNewUser ? 'bg-gray-100 cursor-not-allowed' : ''} ${language === 'ar' ? 'text-right' : ''}`}
-                  required
-                  pattern="^[12]\d{9}$"
-                  title={t('nationalIdTitle')}
-                  minLength="10"
-                  maxLength="10"
                   readOnly={!isNewUser}
                 />
               </div>
@@ -186,43 +350,43 @@ const UserModal = ({ groups, roles, resources, onClose, onSave, user }) => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-gray-700 font-semibold mb-2" htmlFor="arFullName">{t('arabicFullName')}</label>
-                    <input type="text" id="arFullName" name="arFullName" value={formData.arFullName} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${language === 'ar' ? 'text-right' : ''}`} required readOnly/>
+                    <input type="text" id="arFullName" name="arFullName" value={formData.arFullName} onChange={handleChange} placeholder={formData.full_name_ar || t('arabicFullName')} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${language === 'ar' ? 'text-right' : ''}`} required readOnly/>
                   </div>
                   <div>
                     <label className="block text-gray-700 font-semibold mb-2" htmlFor="enFullName">{t('englishFullName')}</label>
-                    <input type="text" id="enFullName" name="enFullName" value={formData.enFullName} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${language === 'ar' ? 'text-right' : ''}`} required readOnly/>
+                    <input type="text" id="enFullName" name="enFullName" value={formData.enFullName} onChange={handleChange} placeholder={formData.full_name_en || t('englishFullName')} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${language === 'ar' ? 'text-right' : ''}`} required readOnly/>
                   </div>
                   <div>
                     <label className="block text-gray-700 font-semibold mb-2" htmlFor="arFirst">{t('arabicFirstName')}</label>
-                    <input type="text" id="arFirst" name="arFirst" value={formData.arFirst} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${language === 'ar' ? 'text-right' : ''}`} readOnly/>
+                    <input type="text" id="arFirst" name="arFirst" value={formData.arFirst} onChange={handleChange} placeholder={formData.first_name_ar || t('arabicFirstName')} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${language === 'ar' ? 'text-right' : ''}`} readOnly/>
                   </div>
                   <div>
                     <label className="block text-gray-700 font-semibold mb-2" htmlFor="enFirst">{t('englishFirstName')}</label>
-                    <input type="text" id="enFirst" name="enFirst" value={formData.enFirst} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${language === 'ar' ? 'text-right' : ''}`} readOnly/>
+                    <input type="text" id="enFirst" name="enFirst" value={formData.enFirst} onChange={handleChange} placeholder={formData.first_name_en || t('englishFirstName')} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${language === 'ar' ? 'text-right' : ''}`} readOnly/>
                   </div>
                   <div>
                     <label className="block text-gray-700 font-semibold mb-2" htmlFor="arFather">{t('arabicFatherName')}</label>
-                    <input type="text" id="arFather" name="arFather" value={formData.arFather} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${language === 'ar' ? 'text-right' : ''}`} readOnly/>
+                    <input type="text" id="arFather" name="arFather" value={formData.arFather} onChange={handleChange} placeholder={formData.father_name_ar || t('arabicFatherName')} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${language === 'ar' ? 'text-right' : ''}`} readOnly/>
                   </div>
                   <div>
                     <label className="block text-gray-700 font-semibold mb-2" htmlFor="enFather">{t('englishFatherName')}</label>
-                    <input type="text" id="enFather" name="enFather" value={formData.enFather} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${language === 'ar' ? 'text-right' : ''}`} readOnly/>
+                    <input type="text" id="enFather" name="enFather" value={formData.enFather} onChange={handleChange} placeholder={formData.father_name_en || t('englishFatherName')} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${language === 'ar' ? 'text-right' : ''}`} readOnly/>
                   </div>
                   <div>
                     <label className="block text-gray-700 font-semibold mb-2" htmlFor="arGrand">{t('arabicGrandfatherName')}</label>
-                    <input type="text" id="arGrand" name="arGrand" value={formData.arGrand} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${language === 'ar' ? 'text-right' : ''}`} readOnly/>
+                    <input type="text" id="arGrand" name="arGrand" value={formData.arGrand} onChange={handleChange} placeholder={formData.grand_name_ar || t('arabicGrandfatherName')} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${language === 'ar' ? 'text-right' : ''}`} readOnly/>
                   </div>
                   <div>
                     <label className="block text-gray-700 font-semibold mb-2" htmlFor="enGrand">{t('englishGrandfatherName')}</label>
-                    <input type="text" id="enGrand" name="enGrand" value={formData.enGrand} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${language === 'ar' ? 'text-right' : ''}`} readOnly/>
+                    <input type="text" id="enGrand" name="enGrand" value={formData.enGrand} onChange={handleChange} placeholder={formData.grand_name_en || t('englishGrandfatherName')} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${language === 'ar' ? 'text-right' : ''}`} readOnly/>
                   </div>
                   <div>
                     <label className="block text-gray-700 font-semibold mb-2" htmlFor="arFamily">{t('arabicFamilyName')}</label>
-                    <input type="text" id="arFamily" name="arFamily" value={formData.arFamily} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${language === 'ar' ? 'text-right' : ''}`} readOnly/>
+                    <input type="text" id="arFamily" name="arFamily" value={formData.arFamily} onChange={handleChange} placeholder={formData.family_name_ar || t('arabicFamilyName')} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${language === 'ar' ? 'text-right' : ''}`} readOnly/>
                   </div>
                   <div>
                     <label className="block text-gray-700 font-semibold mb-2" htmlFor="enFamily">{t('englishFamilyName')}</label>
-                    <input type="text" id="enFamily" name="enFamily" value={formData.enFamily} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${language === 'ar' ? 'text-right' : ''}`} readOnly/>
+                    <input type="text" id="enFamily" name="enFamily" value={formData.enFamily} onChange={handleChange} placeholder={formData.family_name_en || t('englishFamilyName')} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${language === 'ar' ? 'text-right' : ''}`} readOnly/>
                   </div>
                 </div>
               </div>
@@ -292,19 +456,7 @@ const UserModal = ({ groups, roles, resources, onClose, onSave, user }) => {
                 </div>
               </div>
 
-              {/* <div className="mb-6">
-                <h4 className="text-xl font-bold text-gray-700 mb-4 border-b pb-2">{t('contactDetails')}</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-gray-700 font-semibold mb-2" htmlFor="email">{t('email')}</label>
-                    <input type="email" id="email" name="email" value={formData.email} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${language === 'ar' ? 'text-right' : ''}`} />
-                  </div>
-                  <div>
-                    <label className="block text-gray-700 font-semibold mb-2" htmlFor="phone">{t('phone')}</label>
-                    <input type="number" id="phone" name="phone" value={formData.phone} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${language === 'ar' ? 'text-right' : ''}`} />
-                  </div>
-                </div>
-              </div> */}
+          
 
             </>
           )}
@@ -318,7 +470,7 @@ const UserModal = ({ groups, roles, resources, onClose, onSave, user }) => {
               </div>
               <div>
                 <label className="block text-gray-700 font-semibold mb-2" htmlFor="phone">{t('phone')}</label>
-                <input type="number" id="phone" name="phone" value={formData.phone} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${language === 'ar' ? 'text-right' : ''}`} />
+                <input type="string" id="phone" name="phone" value={formData.phone} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${language === 'ar' ? 'text-right' : ''}`} />
               </div>
             </div>
           </div>
@@ -330,7 +482,7 @@ const UserModal = ({ groups, roles, resources, onClose, onSave, user }) => {
                   <input
                     type="checkbox"
                     value={group.id}
-                    checked={formData.groupIds.includes(group.id)}
+                    checked={Array.isArray(formData.groupIds) && formData.groupIds.includes(group.id)}
                     onChange={handleGroupChange}
                     className="form-checkbox text-teal-600 rounded-md transition-colors duration-200"
                   />
@@ -340,35 +492,15 @@ const UserModal = ({ groups, roles, resources, onClose, onSave, user }) => {
             </div>
           </div>
           <div className="mb-4">
-            <label className="block text-gray-700 font-semibold mb-2" htmlFor="role">{t('assignedRole')}</label>
+            <label className="block text-gray-700 font-semibold mb-2" htmlFor="role">{t('assignedRoles')}</label>
             <input
               type="text"
               id="role"
-              value={currentRoleNames}
+              value={getRoleNamesForGroups(formData.groupIds || [])}
               readOnly
               className={`w-full px-4 py-2 border rounded-lg bg-gray-100 text-gray-600 focus:outline-none cursor-not-allowed ${language === 'ar' ? 'text-right' : ''}`}
             />
           </div>
-          <div className="mb-6">
-            <label className="block text-gray-700 font-semibold mb-2">{t('resourcesLabel')}</label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {Object.entries(resourcesByCategory).map(([category, perms]) => (
-                <div key={category} className="mb-3">
-                  <h4 className="text-sm font-bold text-gray-500 mb-1">{category}</h4>
-                  {perms.map(p => (
-                    <div key={p.id} className={`flex items-center space-x-2 text-gray-700 ${language === 'ar' ? 'flex-row-reverse space-x-reverse' : ''}`}>
-                      <CheckCircle2
-                        size={16}
-                        className={currentresources.includes(p.id) ? "text-green-500" : "text-gray-300"}
-                      />
-                      <span>{p.name}</span>
-                    </div>
-                  ))}
-                </div>
-              ))}
-            </div>
-          </div>
-
           <div className={`flex justify-end space-x-4 ${language === 'ar' ? 'flex-row-reverse space-x-reverse' : ''}`}>
             <button
               type="button"

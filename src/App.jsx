@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import useLanguage from './hooks/useLanguage';
 import { User, Users, Shield, Settings } from 'lucide-react';
 import UserManagement from './components/UserManagement';
@@ -10,110 +10,194 @@ import GroupModal from './Modals/GroupModal';
 import RoleModal from './Modals/RoleModal';
 import ResourceModal from './Modals/ResourceModal';
 import Navbar from './components/Navbar';
+import axios from 'axios';
 // import ParticleBackground from './components/ParticleBackground';
 
 
+const API_BASE_URL = 'https://dev-api.wedo.solutions:3000/api';
+
 const App = () => {
 
-  const [resources, setResources] = useState([
-    { id: 'p-1001', name: 'Users', category: 'User Management' },
-    { id: 'p-1002', name: 'Content', category: 'Content' },
-    { id: 'p-1003', name: 'Reports', category: 'Reporting' },
-    { id: 'p-1004', name: 'Invoices', category: 'Finance' },
-  ]);
-
- const [roles, setRoles] = useState([
-  { id: 1, name: 'Admin', access: { 'p-1001': ['create', 'read', 'update', 'delete'], 'p-1002': ['create', 'read', 'update', 'delete'], 'p-1003': ['read'], 'p-1004': ['create', 'read', 'update', 'delete'] } },
-  { id: 2, name: 'Finance', access: { 'p-1003': ['read'], 'p-1004': ['create', 'read', 'update'] } },
-  { id: 3, name: 'Editor', access: { 'p-1002': ['create', 'read', 'update'], 'p-1003': ['read'] } },
-  { id: 4, name: 'Viewer', access: { 'p-1003': ['read'] } },
-]);
-
-  const [groups, setGroups] = useState([
-    { id: 101, name: 'Management', roleId: 1 },
-    { id: 102, name: 'Sales & Finance', roleId: 2 },
-    { id: 103, name: 'Content Team', roleId: 3 },
-    { id: 104, name: 'General Staff', roleId: 4 },
-  ]);
-  
-  const [users, setUsers] = useState([
-    { id: '1000000001', groupIds: [101], arFullName: 'أحمد سعيد', enFullName: 'Ahmed Saeed', dobH: 14000101, dobG: '1979-11-20', gender: 'M', arFirst: 'أحمد', enFirst: 'Ahmed', arFamily: 'سعيد', enFamily: 'Saeed', arFather: 'محمد', enFather: 'Mohammed', arGrand: 'علي', enGrand: 'Ali', idVersion: 1, idIssueDateG: '2020-01-01', idIssueDateH: 14410505, idExpiryDateG: '2030-01-01', idExpiryDateH: 14510505, nationality: 1, enNationality: 'Saudi Arabian', arNationality: 'سعودي', language: 'ar' },
-    { id: '2000000002', groupIds: [103], arFullName: 'فاطمة خالد', enFullName: 'Fatima Khalid', dobH: 14100101, dobG: '1989-11-20', gender: 'F', arFirst: 'فاطمة', enFirst: 'Fatima', arFamily: 'خالد', enFamily: 'Khalid', arFather: 'عبدالله', enFather: 'Abdullah', arGrand: 'سعود', enGrand: 'Saud', idVersion: 1, idIssueDateG: '2020-01-01', idIssueDateH: 14410505, idExpiryDateG: '2030-01-01', idExpiryDateH: 14510505, nationality: 1, enNationality: 'Saudi Arabian', arNationality: 'سعودي', language: 'en' },
-    { id: '1000000003', groupIds: [104, 102], arFullName: 'علياء ناصر', enFullName: 'Alia Nasser', dobH: 14200101, dobG: '1999-11-20', gender: 'F', arFirst: 'علياء', enFirst: 'Alia', arFamily: 'ناصر', enFamily: 'Nasser', arFather: 'فهد', enFather: 'Fahad', arGrand: 'خالد', enGrand: 'Khalid', idVersion: 1, idIssueDateG: '2020-01-01', idIssueDateH: 14410505, idExpiryDateG: '2030-01-01', idExpiryDateH: 14510505, nationality: 1, enNationality: 'Saudi Arabian', arNationality: 'سعودي', language: 'en' },
-  ]);
+  const [resources, setResources] = useState([]);
+  const [roles, setRoles] = useState([]);
+  const [groups, setGroups] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [permissions, setPermissions] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [activeTab, setActiveTab] = useState('users');
   const { language, setLanguage, t } = useLanguage();
 
-  const handleAddUser = (userData) => {
-    setUsers([...users, userData]);
-    setIsModalOpen(false);
-    setEditingItem(null);
+
+    // Fetch roles from API
+  const fetchRoles = async () => {
+  // ...existing code...
+    try {
+      const res = await axios.get(`${API_BASE_URL}/roles`);
+      console.log('API roles response:', res.data);
+      setRoles(res.data);
+      console.log('Fetched roles:', res.data);
+    } catch (err) {
+      setError && setError(err.message);
+      console.error('Error fetching roles:', err);
+    }
   };
 
-  const handleEditUser = (userData) => {
-    setUsers(users.map(u => (u.id === userData.id ? userData : u)));
-    setIsModalOpen(false);
-    setEditingItem(null);
+  // Fetch groups from API
+  const fetchGroups = async () => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/groups`);
+      setGroups(res.data);
+      console.log('Fetched groups:', res.data);
+    } catch (err) {
+      setError(err.message);
+      console.error('Error fetching groups:', err);
+    }
   };
 
-  const handleDeleteUser = (itemId) => {
-    setUsers(users.filter(u => u.id !== itemId));
+  // Fetch users from API
+  const fetchUsers = async () => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/users`);
+      setUsers(res.data);
+      console.log('Fetched users:', res.data);
+    } catch (err) {
+      setError(err.message);
+      console.error('Error fetching users:', err);
+    }
   };
 
-  const handleAddGroup = (groupData) => {
-    setGroups([...groups, { ...groupData, id: groups.length + 101 }]);
-    setIsModalOpen(false);
-    setEditingItem(null);
-  };
-  
-  const handleEditGroup = (groupData) => {
-    setGroups(groups.map(g => (g.id === groupData.id ? groupData : g)));
-    setIsModalOpen(false);
-    setEditingItem(null);
-  };
-  
-  const handleDeleteGroup = (itemId) => {
-    setGroups(groups.filter(g => g.id !== itemId));
-  };
-  
-  const handleAddRole = (roleData) => {
-    setRoles([...roles, { ...roleData, id: roles.length + 1 }]);
-    setIsModalOpen(false);
-    setEditingItem(null);
-  };
-  
-  const handleEditRole = (roleData) => {
-    setRoles(roles.map(r => (r.id === roleData.id ? roleData : r)));
-    setIsModalOpen(false);
-    setEditingItem(null);
+  const fetchResources = async () => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/resources`);
+      setResources(res.data);
+      console.log('Fetched resources:', res.data);
+    } catch (err) {
+      setError(err.message);
+      console.error('Error fetching resources:', err);
+    }
   };
 
-  const handleDeleteRole = (itemId) => {
-    setRoles(roles.filter(r => r.id !== itemId));
+  const fetchPermissions = async () => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/permissions`);
+      setPermissions(res.data);
+      console.log('Fetched permissions:', res.data);
+    } catch (err) {
+      setError(err.message);
+      console.error('Error fetching permissions:', err);
+    }
   };
 
-  const handleAddResource = (resourceData) => {
-    // Generate next id in the format p-100X
-    const lastId = resources.length > 0
-      ? Math.max(...resources.map(r => parseInt(r.id.replace('p-', ''), 10)))
-      : 1000;
-    const nextId = `p-${lastId + 1}`;
-    setResources([...resources, { ...resourceData, id: nextId }]);
+  // Load all data on component mount
+  useEffect(() => {
+    const loadAllData = async () => {
+      setLoading(true);
+      await Promise.all([
+        fetchGroups(),
+        fetchUsers(),
+        fetchResources(),
+        fetchRoles(),
+        fetchPermissions()
+      ]);
+      setLoading(false);
+    };
+    loadAllData();
+  }, []);
+
+
+  // Unified refresh function for all entities
+  const refreshAll = async () => {
+    await Promise.all([
+      fetchUsers(),
+      fetchGroups(),
+      fetchRoles(),
+      fetchResources(),
+      fetchPermissions()
+    ]);
+  };
+
+  // User handlers
+  const handleAddUser = async () => {
+    await refreshAll();
     setIsModalOpen(false);
     setEditingItem(null);
   };
-
-  const handleEditResource = (resourceData) => {
-    setResources(resources.map(p => (p.id === resourceData.id ? resourceData : p)));
+  const handleEditUser = async () => {
+    await refreshAll();
     setIsModalOpen(false);
     setEditingItem(null);
   };
+  const handleDeleteUser = async (itemId) => {
+    try {
+      await axios.delete(`${API_BASE_URL}/users/${itemId}`);
+      await refreshAll();
+    } catch (err) {
+      console.error('Error deleting user:', err);
+    }
+  };
 
-  const handleDeleteResource = (itemId) => {
-    setResources(resources.filter(p => p.id !== itemId));
+  // Group handlers
+  const handleAddGroup = async () => {
+    await refreshAll();
+    setIsModalOpen(false);
+    setEditingItem(null);
+  };
+  const handleEditGroup = async () => {
+    await refreshAll();
+    setIsModalOpen(false);
+    setEditingItem(null);
+  };
+  const handleDeleteGroup = async (itemId) => {
+    try {
+      await axios.delete(`${API_BASE_URL}/groups/${itemId}`);
+      await refreshAll();
+    } catch (err) {
+      console.error('Error deleting group:', err);
+    }
+  };
+
+  // Role handlers
+  const handleAddRole = async () => {
+    await refreshAll();
+    setIsModalOpen(false);
+    setEditingItem(null);
+  };
+  const handleEditRole = async () => {
+    await refreshAll();
+    setIsModalOpen(false);
+    setEditingItem(null);
+  };
+  const handleDeleteRole = async (itemId) => {
+    try {
+      await axios.delete(`${API_BASE_URL}/roles/${itemId}`);
+      await refreshAll();
+    } catch (err) {
+      console.error('Error deleting role:', err);
+    }
+  };
+
+  // Resource handlers
+  const handleAddResource = async () => {
+    await refreshAll();
+    setIsModalOpen(false);
+    setEditingItem(null);
+  };
+  const handleEditResource = async () => {
+    await refreshAll();
+    setIsModalOpen(false);
+    setEditingItem(null);
+  };
+  const handleDeleteResource = async (itemId) => {
+    try {
+      await axios.delete(`${API_BASE_URL}/resources/${itemId}`);
+      await refreshAll();
+    } catch (err) {
+      console.error('Error deleting resource:', err);
+    }
   };
 
   const openAddModal = (type) => {
@@ -127,6 +211,22 @@ const App = () => {
   };
 
   const renderCurrentScreen = () => {
+    if (loading) {
+      return (
+        <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
+          <div className="text-lg text-gray-600">Loading...</div>
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
+          <div className="text-lg text-red-600">Error: {error}</div>
+        </div>
+      );
+    }
+
     switch (activeTab) {
       case 'groups':
         return (
@@ -183,8 +283,8 @@ const App = () => {
             group={editingItem}
           />
         );
-     case 'role':
-        return <RoleModal resources={resources} onClose={() => setIsModalOpen(false)} onSave={editingItem ? handleEditRole : handleAddRole} role={editingItem} />;
+      case 'role':
+        return <RoleModal resources={resources} permissions={permissions} onClose={() => setIsModalOpen(false)} onSave={editingItem ? handleEditRole : handleAddRole} role={editingItem} />;
       case 'resource':
         return <ResourceModal onClose={() => setIsModalOpen(false)} onSave={editingItem ? handleEditResource : handleAddResource} resource={editingItem} />;
       default:
