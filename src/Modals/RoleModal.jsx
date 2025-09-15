@@ -432,12 +432,17 @@
 
 
 
-
-
 import React, { useState, useEffect } from 'react';
-import { X, Eye, Edit, Trash2 } from 'lucide-react';
+import { X, Eye, Pencil, Trash2, PlusCircle } from 'lucide-react';
 import useLanguage from '../hooks/useLanguage';
 import axios from 'axios';
+
+const permissionIcons = {
+  read: Eye,
+  write: Pencil,
+  delete: Trash2,
+  create: PlusCircle,
+};
 
 const RoleModal = ({ resources, onClose, onSave, role }) => {
     const { t } = useLanguage();
@@ -448,40 +453,60 @@ const RoleModal = ({ resources, onClose, onSave, role }) => {
       // Fetch permissions dynamically from API
       const fetchPermissions = async () => {
         try {
-          const res = await (window.axios
-            ? window.axios.get('https://dev-api.wedo.solutions:3000/api/permissions')
-            : (await import('axios')).default.get('https://dev-api.wedo.solutions:3000/api/permissions'));
+          const res = await axios.get('https://dev-api.wedo.solutions:3000/api/permissions');
           setPermissions(res.data);
         } catch (err) {
           setPermissions([
             { id: 1, name: 'read' },
             { id: 2, name: 'write' },
             { id: 3, name: 'delete' },
+            { id: 4, name: 'create' },
           ]);
         }
       };
       fetchPermissions();
     }, []);
 
-    useEffect(() => {
-      if (role) {
-        const access = {};
-        (role.resources || []).forEach(resource => {
-          access[resource.resource_id] = resource.permissions.map(permId => {
-            const perm = permissions.find(p => p.id === permId);
-            return perm ? perm.name : permId;
-          });
-        });
+    const [selected, setSelected] = useState({}); // { resourceId: [permissionId, ...] }
 
-        setFormData({
-          name: role.name || '',
-          description: role.description || '',
-          access,
-        });
-      } else {
-        setFormData({ name: '', description: '', access: {} });
-      }
-    }, [role, resources, permissions]);
+useEffect(() => {
+  if (role && Array.isArray(role.resources)) {
+    const initial = {};
+    role.resources.forEach(resourceObj => {
+      initial[resourceObj.resource_id] = resourceObj.permissions.map(String);
+    });
+    setSelected(initial);
+  }
+}, [role]);
+
+const handleToggle = (resourceId, permissionId) => {
+  setSelected(prev => {
+    const already = prev[resourceId]?.includes(permissionId);
+    let newSelected = { ...prev };
+    if (already) {
+      newSelected[resourceId] = newSelected[resourceId].filter(id => id !== permissionId);
+    } else {
+      newSelected[resourceId] = [...(newSelected[resourceId] || []), permissionId];
+    }
+    return newSelected;
+  });
+};
+
+const ActionIcon = ({ resourceId, permission }) => {
+  const Icon = permissionIcons[permission.name] || Eye;
+  const isActive = selected[resourceId]?.includes(String(permission.id));
+  return (
+    <button
+      type="button"
+      onClick={() => handleToggle(resourceId, String(permission.id))}
+      className={`p-1 rounded-full transition-colors duration-200 border ${isActive ? 'bg-teal-100 border-teal-500 text-teal-700' : 'bg-gray-50 border-gray-300 text-gray-400'} hover:bg-teal-200 hover:text-teal-900`}
+      title={permission.name}
+      aria-pressed={isActive}
+    >
+      <Icon size={18} />
+    </button>
+  );
+};
 
     const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
@@ -502,6 +527,7 @@ const RoleModal = ({ resources, onClose, onSave, role }) => {
             try {
                 let res;
                 if (isCurrentlyActive) {
+                    // Assume DELETE endpoint exists symmetrically
                     res = await axios.delete(`${API_BASE_URL}/associations/roles/${role.id}/permissions`, {
                         data: {
                             resourceId: Number(resourceId),
@@ -514,17 +540,23 @@ const RoleModal = ({ resources, onClose, onSave, role }) => {
                         permissionId: Number(permissionId)
                     });
                 }
-                console.log('API response:', res.data);
-
+                // Refetch updated role data
                 const updatedRoleRes = await axios.get(`${API_BASE_URL}/roles/${role.id}`);
                 const updatedRole = updatedRoleRes.data;
 
+                // Recompute access from policies
+                const resourceNameToId = resources.reduce((acc, r) => {
+                  acc[r.name] = r.id;
+                  return acc;
+                }, {});
                 const newAccess = {};
-                (updatedRole.resources || []).forEach(resource => {
-                  newAccess[resource.resource_id] = resource.permissions.map(permId => {
-                    const perm = permissions.find(p => p.id === permId);
-                    return perm ? perm.name : permId;
-                  });
+                (updatedRole.policies || []).forEach(policy => {
+                  const [sub, obj, act] = policy;
+                  const resId = resourceNameToId[obj];
+                  if (resId) {
+                    if (!newAccess[resId]) newAccess[resId] = [];
+                    newAccess[resId].push(act);
+                  }
                 });
 
                 setFormData(prev => ({ ...prev, access: newAccess }));
@@ -533,6 +565,7 @@ const RoleModal = ({ resources, onClose, onSave, role }) => {
                 alert('Error assigning/removing permission: ' + (err.response?.data?.message || err.message));
             }
         } else {
+            // Local toggle for new role
             setFormData(prev => {
                 const newAccess = { ...prev.access };
                 const currentActions = newAccess[resourceId] || [];
@@ -565,6 +598,7 @@ const RoleModal = ({ resources, onClose, onSave, role }) => {
                 res = await axios.post(`${API_BASE_URL}/roles`, payload);
                 roleId = res.data.id;
 
+                // Assign permissions for new role
                 const permNameToId = permissions.reduce((acc, p) => {
                   acc[p.name] = p.id;
                   return acc;
@@ -582,7 +616,7 @@ const RoleModal = ({ resources, onClose, onSave, role }) => {
                 }
             }
             if (typeof onSave === 'function') {
-                await onSave(res.data);
+                await onSave(res.data); // Parent will refetch all data
             }
             onClose();
         } catch (err) {
@@ -590,26 +624,7 @@ const RoleModal = ({ resources, onClose, onSave, role }) => {
         }
     };
 
-    const ActionIcon = ({ resourceId, permission }) => {
-        const Icon = {
-            read: Eye,
-            write: Edit,
-            delete: Trash2,
-        }[permission.name] || Eye;
-        const activePermissions = formData.access[resourceId] || [];
-        const isActive = activePermissions.includes(permission.name);
-        return (
-            <button
-                type="button"
-                onClick={() => handleAccessChange(resourceId, permission.name)}
-                className={`p-1 rounded-full transition-colors duration-200 border ${isActive ? 'bg-teal-100 border-teal-500 text-teal-700' : 'bg-gray-50 border-gray-300 text-gray-400'} hover:bg-teal-200 hover:text-teal-900`}
-                title={permission.name}
-                aria-pressed={isActive}
-            >
-                <Icon size={18} />
-            </button>
-        );
-    };
+    
 
     return (
         <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4">
@@ -630,16 +645,28 @@ const RoleModal = ({ resources, onClose, onSave, role }) => {
                     <div className="mb-6">
                         <label className="block text-gray-800 font-bold mb-2">{t('permissionsLabel')}</label>
                         <div className="space-y-2">
-                            {resources.map(resource => (
+                            {/* {resources.map(resource => (
                                 <div key={resource.id} className="flex items-center justify-between p-2 border rounded-lg">
                                     <span className="text-sm text-gray-700">{resource.name}</span>
                                     <div className="flex items-center space-x-2">
                                         {permissions.map(permission => (
-                                            <ActionIcon key={permission.id} resourceId={resource.id} permission={permission} />
+                                            <ActionIcon resourceId={resource.id} permission={permission} key={permission.id} />
                                         ))}
                                     </div>
                                 </div>
-                            ))}
+                            ))} */}
+
+                            {resources.map(resource => (
+  <div key={resource.id} className="flex items-center justify-between p-2 border rounded-lg">
+    <span className="text-sm text-gray-700">{resource.name}</span>
+    <div className="flex items-center space-x-2">
+      {permissions.map(permission => (
+        <ActionIcon resourceId={resource.id} permission={permission} key={permission.id} />
+      ))}
+    </div>
+  </div>
+))}
+
                         </div>
                     </div>
                     <div className="flex justify-end space-x-4">

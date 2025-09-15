@@ -46,7 +46,6 @@ const UserModal = ({ groups, roles, resources, onClose, onSave, user }) => {
         status: user.status || '',
         roles: user.roles || [],
         groupIds: user.groups.map(g => g.id),
-        phone: user.phone || user.phone_number || '',
       };
     }
     // Default for new user
@@ -86,7 +85,6 @@ const UserModal = ({ groups, roles, resources, onClose, onSave, user }) => {
       status: '',
       roles: [],
       groupIds: [],
-      phone: '',
     };
   });
   const isNewUser = !user;
@@ -185,6 +183,8 @@ const UserModal = ({ groups, roles, resources, onClose, onSave, user }) => {
         }
         return { ...prev, roles: newRoles };
       });
+    } else if (name === 'phone_number') {
+      setFormData({ ...formData, phone_number: value });
     } else {
       setFormData({ ...formData, [name]: value });
     }
@@ -470,7 +470,8 @@ const UserModal = ({ groups, roles, resources, onClose, onSave, user }) => {
               </div>
               <div>
                 <label className="block text-gray-700 font-semibold mb-2" htmlFor="phone">{t('phone')}</label>
-                <input type="string" id="phone" name="phone" value={formData.phone} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${language === 'ar' ? 'text-right' : ''}`} />
+                {/* <input type="string" id="phone" name="phone" value={formData.phone} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${language === 'ar' ? 'text-right' : ''}`} /> */}
+                <input type="string" id="phone_number" name="phone_number" value={formData.phone_number} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 ${language === 'ar' ? 'text-right' : ''}`} />
               </div>
             </div>
           </div>

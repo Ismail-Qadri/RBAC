@@ -1,23 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import useLanguage from './hooks/useLanguage';
-import { User, Users, Shield, Settings } from 'lucide-react';
-import UserManagement from './components/UserManagement';
-import GroupManagement from './components/GroupManagement';
-import RoleManagement from './components/RoleManagement';
-import ResourceManagement from './components/ResourceManagement';
-import UserModal from './Modals/UserModal';
-import GroupModal from './Modals/GroupModal';
-import RoleModal from './Modals/RoleModal';
-import ResourceModal from './Modals/ResourceModal';
-import Navbar from './components/Navbar';
-import axios from 'axios';
+import React, { useState, useEffect } from "react";
+import useLanguage from "./hooks/useLanguage";
+import { User, Users, Shield, Settings } from "lucide-react";
+import UserManagement from "./components/UserManagement";
+import GroupManagement from "./components/GroupManagement";
+import RoleManagement from "./components/RoleManagement";
+import ResourceManagement from "./components/ResourceManagement";
+import UserModal from "./Modals/UserModal";
+import GroupModal from "./Modals/GroupModal";
+import RoleModal from "./Modals/RoleModal";
+import ResourceModal from "./Modals/ResourceModal";
+import Navbar from "./components/Navbar";
+import axios from "axios";
 // import ParticleBackground from './components/ParticleBackground';
 
-
-const API_BASE_URL = 'https://dev-api.wedo.solutions:3000/api';
+const API_BASE_URL = "https://dev-api.wedo.solutions:3000/api";
 
 const App = () => {
-
   const [resources, setResources] = useState([]);
   const [roles, setRoles] = useState([]);
   const [groups, setGroups] = useState([]);
@@ -28,21 +26,20 @@ const App = () => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
-  const [activeTab, setActiveTab] = useState('users');
+  const [activeTab, setActiveTab] = useState("users");
   const { language, setLanguage, t } = useLanguage();
 
-
-    // Fetch roles from API
+  // Fetch roles from API
   const fetchRoles = async () => {
-  // ...existing code...
+    // ...existing code...
     try {
       const res = await axios.get(`${API_BASE_URL}/roles`);
-      console.log('API roles response:', res.data);
+      console.log("API roles response:", res.data);
       setRoles(res.data);
-      console.log('Fetched roles:', res.data);
+      console.log("Fetched roles:", res.data);
     } catch (err) {
       setError && setError(err.message);
-      console.error('Error fetching roles:', err);
+      console.error("Error fetching roles:", err);
     }
   };
 
@@ -51,10 +48,10 @@ const App = () => {
     try {
       const res = await axios.get(`${API_BASE_URL}/groups`);
       setGroups(res.data);
-      console.log('Fetched groups:', res.data);
+      console.log("Fetched groups:", res.data);
     } catch (err) {
       setError(err.message);
-      console.error('Error fetching groups:', err);
+      console.error("Error fetching groups:", err);
     }
   };
 
@@ -62,11 +59,20 @@ const App = () => {
   const fetchUsers = async () => {
     try {
       const res = await axios.get(`${API_BASE_URL}/users`);
-      setUsers(res.data);
-      console.log('Fetched users:', res.data);
+      // If users have a createdAt field, sort by it ascending (oldest first, newest last)
+      let sortedUsers = Array.isArray(res.data)
+        ? [...res.data].sort((a, b) => {
+            if (a.createdAt && b.createdAt) {
+              return new Date(a.createdAt) - new Date(b.createdAt);
+            }
+            return 0; // fallback: keep order as is
+          })
+        : res.data;
+      setUsers(sortedUsers);
+      console.log("Fetched users:", sortedUsers);
     } catch (err) {
       setError(err.message);
-      console.error('Error fetching users:', err);
+      console.error("Error fetching users:", err);
     }
   };
 
@@ -74,10 +80,10 @@ const App = () => {
     try {
       const res = await axios.get(`${API_BASE_URL}/resources`);
       setResources(res.data);
-      console.log('Fetched resources:', res.data);
+      console.log("Fetched resources:", res.data);
     } catch (err) {
       setError(err.message);
-      console.error('Error fetching resources:', err);
+      console.error("Error fetching resources:", err);
     }
   };
 
@@ -85,10 +91,10 @@ const App = () => {
     try {
       const res = await axios.get(`${API_BASE_URL}/permissions`);
       setPermissions(res.data);
-      console.log('Fetched permissions:', res.data);
+      console.log("Fetched permissions:", res.data);
     } catch (err) {
       setError(err.message);
-      console.error('Error fetching permissions:', err);
+      console.error("Error fetching permissions:", err);
     }
   };
 
@@ -101,13 +107,12 @@ const App = () => {
         fetchUsers(),
         fetchResources(),
         fetchRoles(),
-        fetchPermissions()
+        fetchPermissions(),
       ]);
       setLoading(false);
     };
     loadAllData();
   }, []);
-
 
   // Unified refresh function for all entities
   const refreshAll = async () => {
@@ -116,7 +121,7 @@ const App = () => {
       fetchGroups(),
       fetchRoles(),
       fetchResources(),
-      fetchPermissions()
+      fetchPermissions(),
     ]);
   };
 
@@ -136,7 +141,7 @@ const App = () => {
       await axios.delete(`${API_BASE_URL}/users/${itemId}`);
       await refreshAll();
     } catch (err) {
-      console.error('Error deleting user:', err);
+      console.error("Error deleting user:", err);
     }
   };
 
@@ -156,7 +161,7 @@ const App = () => {
       await axios.delete(`${API_BASE_URL}/groups/${itemId}`);
       await refreshAll();
     } catch (err) {
-      console.error('Error deleting group:', err);
+      console.error("Error deleting group:", err);
     }
   };
 
@@ -176,7 +181,7 @@ const App = () => {
       await axios.delete(`${API_BASE_URL}/roles/${itemId}`);
       await refreshAll();
     } catch (err) {
-      console.error('Error deleting role:', err);
+      console.error("Error deleting role:", err);
     }
   };
 
@@ -196,7 +201,7 @@ const App = () => {
       await axios.delete(`${API_BASE_URL}/resources/${itemId}`);
       await refreshAll();
     } catch (err) {
-      console.error('Error deleting resource:', err);
+      console.error("Error deleting resource:", err);
     }
   };
 
@@ -204,7 +209,7 @@ const App = () => {
     setEditingItem(null);
     setIsModalOpen({ type });
   };
-  
+
   const openEditModal = (type, item) => {
     setEditingItem(item);
     setIsModalOpen({ type });
@@ -228,31 +233,47 @@ const App = () => {
     }
 
     switch (activeTab) {
-      case 'groups':
+      case "groups":
         return (
-          <GroupManagement 
-            groups={groups} 
-            roles={roles} 
+          <GroupManagement
+            groups={groups}
+            roles={roles}
             users={users}
-            onEdit={(item) => openEditModal('group', item)} 
+            onEdit={(item) => openEditModal("group", item)}
             onDelete={handleDeleteGroup}
-            onAdd={() => openAddModal('group')}
+            onAdd={() => openAddModal("group")}
           />
         );
-     case 'roles':
-        return <RoleManagement roles={roles} resources={resources} onEdit={(item) => openEditModal('role', item)} onDelete={handleDeleteRole} onAdd={() => openAddModal('role')} />;
-      case 'resources':
-        return <ResourceManagement resources={resources} onEdit={(item) => openEditModal('resource', item)} onDelete={handleDeleteResource} onAdd={() => openAddModal('resource')} />;
-      case 'users':
+      case "roles":
+        return (
+          <RoleManagement
+            roles={roles}
+            resources={resources}
+            permissions={permissions}
+            onEdit={(item) => openEditModal("role", item)}
+            onDelete={handleDeleteRole}
+            onAdd={() => openAddModal("role")}
+          />
+        );
+      case "resources":
+        return (
+          <ResourceManagement
+            resources={resources}
+            onEdit={(item) => openEditModal("resource", item)}
+            onDelete={handleDeleteResource}
+            onAdd={() => openAddModal("resource")}
+          />
+        );
+      case "users":
       default:
         return (
-          <UserManagement 
-            users={users} 
-            groups={groups} 
-            roles={roles} 
-            onEdit={(item) => openEditModal('user', item)} 
-            onDelete={handleDeleteUser} 
-            onAdd={() => openAddModal('user')}
+          <UserManagement
+            users={users}
+            groups={groups}
+            roles={roles}
+            onEdit={(item) => openEditModal("user", item)}
+            onDelete={handleDeleteUser}
+            onAdd={() => openAddModal("user")}
           />
         );
     }
@@ -262,7 +283,7 @@ const App = () => {
     if (!isModalOpen) return null;
 
     switch (isModalOpen.type) {
-      case 'user':
+      case "user":
         return (
           <UserModal
             groups={groups}
@@ -273,7 +294,7 @@ const App = () => {
             user={editingItem}
           />
         );
-      case 'group':
+      case "group":
         return (
           <GroupModal
             groups={groups}
@@ -283,63 +304,100 @@ const App = () => {
             group={editingItem}
           />
         );
-      case 'role':
-        return <RoleModal resources={resources} permissions={permissions} onClose={() => setIsModalOpen(false)} onSave={editingItem ? handleEditRole : handleAddRole} role={editingItem} />;
-      case 'resource':
-        return <ResourceModal onClose={() => setIsModalOpen(false)} onSave={editingItem ? handleEditResource : handleAddResource} resource={editingItem} />;
+      case "role":
+        return (
+          <RoleModal
+            resources={resources}
+            permissions={permissions}
+            onClose={() => setIsModalOpen(false)}
+            onSave={editingItem ? handleEditRole : handleAddRole}
+            role={editingItem}
+          />
+        );
+      case "resource":
+        return (
+          <ResourceModal
+            onClose={() => setIsModalOpen(false)}
+            onSave={editingItem ? handleEditResource : handleAddResource}
+            resource={editingItem}
+          />
+        );
       default:
         return null;
     }
   };
 
- 
   return (
     <>
-    {/* <div className="min-h-screen relative"> */}
+      {/* <div className="min-h-screen relative"> */}
       <Navbar />
-        {/* <ParticleBackground /> */}
-          <div className="relative z-10">   
-            <div className="bg-gray-100 p-8 pb-12 font-sans antialiased m-36 rounded-2xl shadow-xl" dir={language === 'ar' ? 'rtl' : 'ltr'}>
-              <div className="max-w-6xl mx-auto mt-4">
-                <header className="flex justify-between items-center mb-6">
-                  <h1 className="text-3xl font-bold text-gray-800 flex items-center">
-                    <Shield className="me-2" size={32} /> {t('permissionManagement')}
-                  </h1>
-                  <nav className={`flex items-center space-x-2 p-1 bg-white rounded-full shadow-lg ${language === 'ar' ? 'flex-row-reverse space-x-reverse' : ''}`}>
-                    <button
-                      onClick={() => setActiveTab('users')}
-                      className={`flex items-center px-4 py-2 rounded-full font-semibold transition-colors duration-200 ${
-                        activeTab === 'users' ? 'bg-[#166a45] text-white' : 'text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      <User size={18} className="me-2" /> {t('users')}
-                    </button>
-                    <button
-                      onClick={() => setActiveTab('groups')}
-                      className={`flex items-center px-4 py-2 rounded-full font-semibold transition-colors duration-200 ${
-                        activeTab === 'groups' ? 'bg-[#166a45] text-white' : 'text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      <Users size={18} className="me-2" /> {t('groups')}
-                    </button>
-                    <button onClick={() => setActiveTab('roles')} className={`flex items-center px-4 py-2 rounded-full font-semibold transition-colors duration-200 ${activeTab === 'roles' ? 'bg-[#166a45] text-white' : 'text-gray-700 hover:bg-gray-200'}`}>
-              <Shield size={18} className="me-2" /> {t('roles')}
-            </button>
-            <button onClick={() => setActiveTab('resources')} className={`flex items-center px-4 py-2 rounded-full font-semibold transition-colors duration-200 ${activeTab === 'resources' ? 'bg-[#166a45] text-white' : 'text-gray-700 hover:bg-gray-200'}`}>
-              <Settings size={18} className="me-2" /> {t('resources')}
-            </button>
-                  </nav>
-                </header>
-                {renderCurrentScreen()}
-              </div>
-              {renderModal()}
-            </div>
+      {/* <ParticleBackground /> */}
+      <div className="relative z-10">
+        <div
+          className="bg-gray-100 p-8 pb-12 font-sans antialiased m-36 rounded-2xl shadow-xl"
+          dir={language === "ar" ? "rtl" : "ltr"}
+        >
+          <div className="max-w-6xl mx-auto mt-4">
+            <header className="flex justify-between items-center mb-6">
+              <h1 className="text-3xl font-bold text-gray-800 flex items-center">
+                <Shield className="me-2" size={32} />{" "}
+                {t("permissionManagement")}
+              </h1>
+              <nav
+                className={`flex items-center space-x-2 p-1 bg-white rounded-full shadow-lg ${
+                  language === "ar" ? "flex-row-reverse space-x-reverse" : ""
+                }`}
+              >
+                <button
+                  onClick={() => setActiveTab("users")}
+                  className={`flex items-center px-4 py-2 rounded-full font-semibold transition-colors duration-200 ${
+                    activeTab === "users"
+                      ? "bg-[#166a45] text-white"
+                      : "text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  <User size={18} className="me-2" /> {t("users")}
+                </button>
+                <button
+                  onClick={() => setActiveTab("groups")}
+                  className={`flex items-center px-4 py-2 rounded-full font-semibold transition-colors duration-200 ${
+                    activeTab === "groups"
+                      ? "bg-[#166a45] text-white"
+                      : "text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  <Users size={18} className="me-2" /> {t("groups")}
+                </button>
+                <button
+                  onClick={() => setActiveTab("roles")}
+                  className={`flex items-center px-4 py-2 rounded-full font-semibold transition-colors duration-200 ${
+                    activeTab === "roles"
+                      ? "bg-[#166a45] text-white"
+                      : "text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  <Shield size={18} className="me-2" /> {t("roles")}
+                </button>
+                <button
+                  onClick={() => setActiveTab("resources")}
+                  className={`flex items-center px-4 py-2 rounded-full font-semibold transition-colors duration-200 ${
+                    activeTab === "resources"
+                      ? "bg-[#166a45] text-white"
+                      : "text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  <Settings size={18} className="me-2" /> {t("resources")}
+                </button>
+              </nav>
+            </header>
+            {renderCurrentScreen()}
           </div>
-          {/* </div> */}
-          </>
+          {renderModal()}
+        </div>
+      </div>
+      {/* </div> */}
+    </>
   );
 };
 
 export default App;
-
-
