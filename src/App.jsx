@@ -331,7 +331,6 @@ const App = () => {
     <>
       {/* <div className="min-h-screen relative"> */}
       <Navbar />
-      {/* <ParticleBackground /> */}
       <div className="relative z-10">
         <div
           className="bg-gray-100 p-8 pb-12 font-sans antialiased m-36 rounded-2xl shadow-xl"
